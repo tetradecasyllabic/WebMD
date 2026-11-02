@@ -1,0 +1,470 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>sophiaisgay</title>
+    <!-- Tailwind CSS for styling -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <!-- Supabase JavaScript Client SDK -->
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+    <!-- Lucide Icons -->
+    <script src="https://unpkg.com/lucide@latest"></script>
+</head>
+<body class="bg-slate-950 text-slate-100 min-h-screen flex flex-col font-sans">
+
+    <!-- Top Navigation Bar -->
+    <header class="bg-slate-900 border-b border-slate-800 sticky top-0 z-30 px-6 py-4 flex items-center justify-between">
+        <div class="flex items-center space-x-3">
+            <div class="bg-cyan-500/10 border border-cyan-500/30 p-2 rounded-xl text-cyan-400">
+                <i data-lucide="activity" class="w-6 h-6"></i>
+            </div>
+            <div>
+                <h1 class="text-xl font-bold tracking-tight text-white">Medi<span class="text-cyan-400">Collab</span></h1>
+                <p class="text-xs text-slate-400">Real-Time Sophia Gay</p>
+            </div>
+        </div>
+        
+        <div class="flex items-center space-x-3">
+            <button onclick="openModal()" class="flex items-center space-x-2 bg-cyan-600 hover:bg-cyan-500 text-white px-4 py-2 rounded-xl text-sm font-medium transition shadow-lg shadow-cyan-900/20">
+                <i data-lucide="plus" class="w-4 h-4"></i>
+                <span>Add Condition</span>
+            </button>
+        </div>
+    </header>
+
+    <!-- Main Workspace Grid -->
+    <main class="flex-1 max-w-7xl w-full mx-auto p-6 grid grid-cols-1 lg:grid-cols-3 gap-6">
+        
+        <!-- Left 2 Columns: Database & Symptom Checker -->
+        <div class="lg:col-span-2 space-y-6">
+            
+            <!-- Tabs & Search Header -->
+            <div class="bg-slate-900 border border-slate-800 rounded-2xl p-5 shadow-xl">
+                <div class="flex flex-col sm:flex-row items-center justify-between gap-4 mb-5">
+                    <!-- Tab Selector -->
+                    <div class="flex bg-slate-950 p-1 rounded-xl border border-slate-800 w-full sm:w-auto">
+                        <button onclick="switchTab('database')" id="btn-tab-database" class="flex-1 sm:flex-none px-4 py-2 rounded-lg text-sm font-medium transition bg-cyan-600 text-white">Database</button>
+                        <button onclick="switchTab('checker')" id="btn-tab-checker" class="flex-1 sm:flex-none px-4 py-2 rounded-lg text-sm font-medium transition text-slate-400 hover:text-white">Symptom Checker</button>
+                    </div>
+
+                    <!-- Search Box -->
+                    <div class="relative w-full sm:w-72">
+                        <i data-lucide="search" class="w-4 h-4 absolute left-3 top-3 text-slate-400"></i>
+                        <input type="text" id="searchInput" oninput="filterData()" placeholder="Search diseases, symptoms, syndromes..." class="w-full bg-slate-950 border border-slate-800 rounded-xl pl-9 pr-4 py-2 text-sm text-white focus:outline-none focus:border-cyan-500 transition">
+                    </div>
+                </div>
+
+                <!-- DATABASE VIEW -->
+                <div id="view-database" class="space-y-4">
+                    <div id="diseaseList" class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                        <!-- Dynamic items loaded here -->
+                        <div class="text-center py-12 text-slate-500 col-span-2">Connecting to Supabase database...</div>
+                    </div>
+                </div>
+
+                <!-- SYMPTOM CHECKER VIEW -->
+                <div id="view-checker" class="hidden space-y-4">
+                    <div class="bg-slate-950 p-4 rounded-xl border border-slate-800">
+                        <h3 class="text-sm font-semibold text-slate-300 mb-3 flex items-center space-x-2">
+                            <i data-lucide="check-square" class="w-4 h-4 text-cyan-400"></i>
+                            <span>Select Observed Symptoms:</span>
+                        </h3>
+                        <div id="symptomChecklist" class="flex flex-wrap gap-2">
+                            <span class="text-xs text-slate-500">Loading symptoms from conditions...</span>
+                        </div>
+                    </div>
+
+                    <div id="checkerResults" class="space-y-3">
+                        <h4 class="text-xs font-semibold uppercase tracking-wider text-slate-400 mt-6">Differential Analysis</h4>
+                        <div class="bg-slate-950/50 border border-slate-800/60 p-6 rounded-xl text-center text-slate-500 text-sm">
+                            Check symptoms above to run instant differential matching.
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Right Column: Live Chat -->
+        <div class="bg-slate-900 border border-slate-800 rounded-2xl p-5 shadow-xl flex flex-col h-[650px] lg:sticky lg:top-24">
+            <div class="flex items-center justify-between pb-4 border-b border-slate-800">
+                <div class="flex items-center space-x-2">
+                    <i data-lucide="message-square" class="w-5 h-5 text-cyan-400"></i>
+                    <h3 class="font-semibold text-white">Clinical Discussion</h3>
+                </div>
+                <span class="flex h-2 w-2 relative">
+                    <span class="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-75"></span>
+                    <span class="relative inline-flex rounded-full h-2 w-2 bg-emerald-500"></span>
+                </span>
+            </div>
+
+            <!-- Messages Stream -->
+            <div id="chatMessages" class="flex-1 overflow-y-auto py-4 space-y-3 pr-2">
+                <div class="text-center text-xs text-slate-500 my-auto">Loading chat feed...</div>
+            </div>
+
+            <!-- Send Message Bar -->
+            <form id="chatForm" onsubmit="sendMessage(event)" class="pt-3 border-t border-slate-800 flex gap-2">
+                <input type="text" id="chatUser" placeholder="Your Name" required class="w-28 bg-slate-950 border border-slate-800 rounded-xl px-3 py-2 text-xs text-white focus:outline-none focus:border-cyan-500">
+                <input type="text" id="chatInput" placeholder="Clinical note..." required class="flex-1 bg-slate-950 border border-slate-800 rounded-xl px-3 py-2 text-xs text-white focus:outline-none focus:border-cyan-500">
+                <button type="submit" class="bg-cyan-600 hover:bg-cyan-500 text-white px-3 py-2 rounded-xl transition flex items-center justify-center">
+                    <i data-lucide="send" class="w-4 h-4"></i>
+                </button>
+            </form>
+        </div>
+    </main>
+
+    <!-- Add Condition Modal -->
+    <div id="conditionModal" class="fixed inset-0 bg-black/70 backdrop-blur-sm z-50 flex items-center justify-center p-4 hidden">
+        <div class="bg-slate-900 border border-slate-800 rounded-2xl max-w-lg w-full p-6 shadow-2xl relative max-h-[90vh] overflow-y-auto">
+            <button onclick="closeModal()" class="absolute top-4 right-4 text-slate-400 hover:text-white">
+                <i data-lucide="x" class="w-5 h-5"></i>
+            </button>
+            <h2 class="text-lg font-bold text-white mb-4 flex items-center space-x-2">
+                <i data-lucide="file-plus" class="w-5 h-5 text-cyan-400"></i>
+                <span>Add Medical Condition</span>
+            </h2>
+
+            <form id="conditionForm" onsubmit="saveCondition(event)" class="space-y-4">
+                <div>
+                    <label class="block text-xs font-medium text-slate-400 mb-1">Condition Name</label>
+                    <input type="text" id="formName" required class="w-full bg-slate-950 border border-slate-800 rounded-xl px-3 py-2 text-sm text-white focus:outline-none focus:border-cyan-500" placeholder="e.g. Strep Throat">
+                </div>
+
+                <div class="grid grid-cols-2 gap-3">
+                    <div>
+                        <label class="block text-xs font-medium text-slate-400 mb-1">Category</label>
+                        <input type="text" id="formCategory" required class="w-full bg-slate-950 border border-slate-800 rounded-xl px-3 py-2 text-sm text-white focus:outline-none focus:border-cyan-500" placeholder="e.g. Infectious">
+                    </div>
+                    <div>
+                        <label class="block text-xs font-medium text-slate-400 mb-1">Severity</label>
+                        <select id="formSeverity" class="w-full bg-slate-950 border border-slate-800 rounded-xl px-3 py-2 text-sm text-white focus:outline-none focus:border-cyan-500">
+                            <option value="Mild">Mild</option>
+                            <option value="Moderate">Moderate</option>
+                            <option value="Severe">Severe</option>
+                            <option value="Critical">Critical</option>
+                        </select>
+                    </div>
+                </div>
+
+                <div class="grid grid-cols-2 gap-3">
+                    <div>
+                        <label class="block text-xs font-medium text-slate-400 mb-1">Onset Type</label>
+                        <input type="text" id="formOnset" required class="w-full bg-slate-950 border border-slate-800 rounded-xl px-3 py-2 text-sm text-white focus:outline-none focus:border-cyan-500" placeholder="e.g. Sudden (acute)">
+                    </div>
+                    <div>
+                        <label class="block text-xs font-medium text-slate-400 mb-1">Duration</label>
+                        <input type="text" id="formDuration" required class="w-full bg-slate-950 border border-slate-800 rounded-xl px-3 py-2 text-sm text-white focus:outline-none focus:border-cyan-500" placeholder="e.g. 7-10 days">
+                    </div>
+                </div>
+
+                <div>
+                    <label class="block text-xs font-medium text-slate-400 mb-1">Symptoms (Comma Separated)</label>
+                    <input type="text" id="formSymptoms" required class="w-full bg-slate-950 border border-slate-800 rounded-xl px-3 py-2 text-sm text-white focus:outline-none focus:border-cyan-500" placeholder="e.g. fever, sore throat, swollen tonsils">
+                </div>
+
+                <div>
+                    <label class="block text-xs font-medium text-slate-400 mb-1">Known Syndromes / Pre-existing Conditions</label>
+                    <input type="text" id="formSyndromes" class="w-full bg-slate-950 border border-slate-800 rounded-xl px-3 py-2 text-sm text-white focus:outline-none focus:border-cyan-500" placeholder="e.g. Immunocompromised, Asthma, None">
+                </div>
+
+                <div>
+                    <label class="block text-xs font-medium text-slate-400 mb-1">Clinical Summary / Description</label>
+                    <textarea id="formDescription" rows="2" required class="w-full bg-slate-950 border border-slate-800 rounded-xl px-3 py-2 text-sm text-white focus:outline-none focus:border-cyan-500" placeholder="Brief explanation of pathology..."></textarea>
+                </div>
+
+                <div>
+                    <label class="block text-xs font-medium text-slate-400 mb-1">Recommended Treatment Protocol</label>
+                    <input type="text" id="formTreatment" required class="w-full bg-slate-950 border border-slate-800 rounded-xl px-3 py-2 text-sm text-white focus:outline-none focus:border-cyan-500" placeholder="e.g. Antibiotics, hydration">
+                </div>
+
+                <div class="flex justify-end space-x-3 pt-2">
+                    <button type="button" onclick="closeModal()" class="bg-slate-800 hover:bg-slate-700 text-slate-300 px-4 py-2 rounded-xl text-sm transition">Cancel</button>
+                    <button type="submit" class="bg-cyan-600 hover:bg-cyan-500 text-white px-5 py-2 rounded-xl text-sm font-medium transition">Save Condition</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- Script Application Logic -->
+    <script>
+        // ⚡ REPLACE THESE WITH YOUR SUPABASE PROJECT KEYS ⚡
+        const SUPABASE_URL = "https://umtmdzlqsvhprtpzusea.supabase.co";
+        const SUPABASE_ANON_KEY = "Ysb_publishable_dF98kMpbCWT3sk_dLEF3oA_0T_RifwP";
+
+        const supabaseClient = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+
+        let diseases = [];
+        let messages = [];
+        let activeTab = 'database';
+        let selectedSymptoms = new Set();
+
+        lucide.createIcons();
+
+        async function initApp() {
+            await fetchDiseases();
+            await fetchMessages();
+            setupRealtimeSubscriptions();
+        }
+
+        async function fetchDiseases() {
+            const { data, error } = await supabaseClient.from('diseases').select('*').order('id', { ascending: false });
+            if (error) {
+                console.error('Error fetching diseases:', error);
+                return;
+            }
+            diseases = data || [];
+            renderDiseases();
+            renderSymptomChecklist();
+        }
+
+        async function fetchMessages() {
+            const { data, error } = await supabaseClient.from('messages').select('*').order('created_at', { ascending: true });
+            if (error) {
+                console.error('Error fetching messages:', error);
+                return;
+            }
+            messages = data || [];
+            renderChat();
+        }
+
+        function setupRealtimeSubscriptions() {
+            supabaseClient
+                .channel('public-db-changes')
+                .on('postgres_changes', { event: '*', schema: 'public', table: 'diseases' }, payload => {
+                    fetchDiseases();
+                })
+                .on('postgres_changes', { event: '*', schema: 'public', table: 'messages' }, payload => {
+                    fetchMessages();
+                })
+                .subscribe();
+        }
+
+        function renderDiseases(filterText = '') {
+            const container = document.getElementById('diseaseList');
+            const filtered = diseases.filter(d => 
+                d.name.toLowerCase().includes(filterText.toLowerCase()) || 
+                d.category.toLowerCase().includes(filterText.toLowerCase()) ||
+                (d.related_syndromes && d.related_syndromes.toLowerCase().includes(filterText.toLowerCase())) ||
+                d.symptoms.some(s => s.toLowerCase().includes(filterText.toLowerCase()))
+            );
+
+            if (filtered.length === 0) {
+                container.innerHTML = `<div class="text-center py-12 text-slate-500 col-span-2">No matching clinical records found.</div>`;
+                return;
+            }
+
+            container.innerHTML = filtered.map(d => `
+                <div class="bg-slate-950 border border-slate-800/80 rounded-xl p-4 flex flex-col justify-between hover:border-slate-700 transition">
+                    <div>
+                        <div class="flex items-start justify-between mb-2">
+                            <div>
+                                <span class="text-xs font-semibold px-2 py-0.5 rounded-md bg-cyan-950 text-cyan-400 border border-cyan-800/50">${d.category}</span>
+                                <h3 class="text-base font-bold text-white mt-1">${d.name}</h3>
+                            </div>
+                            <span class="text-xs px-2 py-0.5 rounded-full ${getSeverityClass(d.severity)}">${d.severity}</span>
+                        </div>
+                        <p class="text-xs text-slate-300 mb-3">${d.description}</p>
+                        
+                        <div class="grid grid-cols-2 gap-2 text-[11px] bg-slate-900/60 p-2.5 rounded-lg border border-slate-800/60 mb-3">
+                            <div><span class="text-slate-400">Onset:</span> <span class="text-slate-200 font-medium">${d.onset || 'N/A'}</span></div>
+                            <div><span class="text-slate-400">Duration:</span> <span class="text-slate-200 font-medium">${d.duration || 'N/A'}</span></div>
+                            <div class="col-span-2"><span class="text-slate-400">Syndromes/Conditions:</span> <span class="text-cyan-300 font-medium">${d.related_syndromes || 'None specified'}</span></div>
+                        </div>
+
+                        <div class="flex flex-wrap gap-1 mb-3">
+                            ${d.symptoms.map(s => `<span class="text-[10px] bg-slate-900 text-slate-300 border border-slate-800 px-2 py-0.5 rounded-md">${s.trim()}</span>`).join('')}
+                        </div>
+                    </div>
+                    <div class="pt-3 border-t border-slate-900 text-xs text-slate-400 flex items-center justify-between">
+                        <span><strong class="text-slate-300">Rx:</strong> ${d.treatment}</span>
+                        <button onclick="deleteDisease(${d.id})" class="text-red-400 hover:text-red-300 transition p-1"><i data-lucide="trash-2" class="w-3.5 h-3.5"></i></button>
+                    </div>
+                </div>
+            `).join('');
+            lucide.createIcons();
+        }
+
+        function getSeverityClass(severity) {
+            switch(severity) {
+                case 'Mild': return 'bg-emerald-950 text-emerald-400 border border-emerald-800/40';
+                case 'Moderate': return 'bg-amber-950 text-amber-400 border border-amber-800/40';
+                case 'Severe': return 'bg-orange-950 text-orange-400 border border-orange-800/40';
+                case 'Critical': return 'bg-rose-950 text-rose-400 border border-rose-800/40';
+                default: return 'bg-slate-800 text-slate-300';
+            }
+        }
+
+        function renderSymptomChecklist() {
+            const allSymptoms = new Set();
+            diseases.forEach(d => {
+                if (d.symptoms) {
+                    d.symptoms.forEach(s => allSymptoms.add(s.trim().toLowerCase()));
+                }
+            });
+
+            const container = document.getElementById('symptomChecklist');
+            if (allSymptoms.size === 0) {
+                container.innerHTML = `<span class="text-xs text-slate-500">No symptoms available yet. Add conditions first.</span>`;
+                return;
+            }
+
+            container.innerHTML = Array.from(allSymptoms).map(s => {
+                const isSelected = selectedSymptoms.has(s);
+                return `
+                    <button onclick="toggleSymptom('${s}')" class="text-xs px-3 py-1.5 rounded-xl border transition flex items-center space-x-1.5 ${isSelected ? 'bg-cyan-600 border-cyan-500 text-white shadow-md' : 'bg-slate-900 border-slate-800 text-slate-300 hover:border-slate-700'}">
+                        <span>${s}</span>
+                    </button>
+                `;
+            }).join('');
+            runDiagnosticMatch();
+        }
+
+        function toggleSymptom(symptom) {
+            if (selectedSymptoms.has(symptom)) {
+                selectedSymptoms.delete(symptom);
+            } else {
+                selectedSymptoms.add(symptom);
+            }
+            renderSymptomChecklist();
+        }
+
+        function runDiagnosticMatch() {
+            const container = document.getElementById('checkerResults');
+            if (selectedSymptoms.size === 0) {
+                container.innerHTML = `
+                    <h4 class="text-xs font-semibold uppercase tracking-wider text-slate-400 mt-6 mb-2">Differential Analysis</h4>
+                    <div class="bg-slate-950/50 border border-slate-800/60 p-6 rounded-xl text-center text-slate-500 text-sm">
+                        Select symptoms above to run instant differential matching.
+                    </div>`;
+                return;
+            }
+
+            const matches = diseases.map(d => {
+                const diseaseSymptoms = d.symptoms.map(s => s.trim().toLowerCase());
+                const matchedCount = diseaseSymptoms.filter(s => selectedSymptoms.has(s)).length;
+                const matchPercentage = Math.round((matchedCount / Math.max(diseaseSymptoms.length, 1)) * 100);
+                return { ...d, matchedCount, matchPercentage };
+            }).filter(d => d.matchedCount > 0).sort((a, b) => b.matchPercentage - a.matchPercentage);
+
+            if (matches.length === 0) {
+                container.innerHTML = `
+                    <h4 class="text-xs font-semibold uppercase tracking-wider text-slate-400 mt-6 mb-2">Differential Analysis</h4>
+                    <div class="bg-slate-950/50 border border-slate-800/60 p-6 rounded-xl text-center text-slate-500 text-sm">
+                        No conditions match the selected symptom combination.
+                    </div>`;
+                return;
+            }
+
+            container.innerHTML = `
+                <h4 class="text-xs font-semibold uppercase tracking-wider text-slate-400 mt-6 mb-2">Differential Analysis (${matches.length} Matches Found)</h4>
+                <div class="space-y-3">
+                    ${matches.map(m => `
+                        <div class="bg-slate-950 border border-slate-800 rounded-xl p-4 flex items-center justify-between">
+                            <div>
+                                <span class="text-xs text-cyan-400 font-medium">${m.category}</span>
+                                <h5 class="text-sm font-bold text-white">${m.name}</h5>
+                                <p class="text-[11px] text-slate-400 mt-0.5">Matched ${m.matchedCount} of ${m.symptoms.length} symptoms • Onset: ${m.onset || 'N/A'}</p>
+                            </div>
+                            <div class="text-right">
+                                <span class="text-sm font-bold px-2.5 py-1 rounded-lg bg-cyan-950 text-cyan-400 border border-cyan-800/50">${m.matchPercentage}% Match</span>
+                            </div>
+                        </div>
+                    `).join('')}
+                </div>
+            `;
+        }
+
+        function renderChat() {
+            const container = document.getElementById('chatMessages');
+            if (messages.length === 0) {
+                container.innerHTML = `<div class="text-center text-xs text-slate-500 my-auto">No chat messages yet. Start the conversation!</div>`;
+                return;
+            }
+
+            container.innerHTML = messages.map(m => `
+                <div class="bg-slate-950 border border-slate-800/70 p-3 rounded-xl">
+                    <div class="flex items-center justify-between mb-1">
+                        <span class="text-xs font-semibold text-cyan-400">${escapeHtml(m.user_name)}</span>
+                        <span class="text-[10px] text-slate-500">${new Date(m.created_at).toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'})}</span>
+                    </div>
+                    <p class="text-xs text-slate-200">${escapeHtml(m.text)}</p>
+                </div>
+            `).join('');
+            container.scrollTop = container.scrollHeight;
+        }
+
+        async function saveCondition(e) {
+            e.preventDefault();
+            const newDisease = {
+                name: document.getElementById('formName').value,
+                category: document.getElementById('formCategory').value,
+                severity: document.getElementById('formSeverity').value,
+                onset: document.getElementById('formOnset').value,
+                duration: document.getElementById('formDuration').value,
+                symptoms: document.getElementById('formSymptoms').value.split(',').map(s => s.trim()),
+                related_syndromes: document.getElementById('formSyndromes').value,
+                description: document.getElementById('formDescription').value,
+                treatment: document.getElementById('formTreatment').value
+            };
+
+            const { error } = await supabaseClient.from('diseases').insert([newDisease]);
+            if (error) {
+                alert('Error saving condition: ' + error.message);
+                return;
+            }
+
+            closeModal();
+            document.getElementById('conditionForm').reset();
+        }
+
+        async function deleteDisease(id) {
+            if (!confirm('Are you sure you want to delete this condition?')) return;
+            const { error } = await supabaseClient.from('diseases').delete().eq('id', id);
+            if (error) alert('Error deleting record: ' + error.message);
+        }
+
+        async function sendMessage(e) {
+            e.preventDefault();
+            const userName = document.getElementById('chatUser').value;
+            const text = document.getElementById('chatInput').value;
+
+            const { error } = await supabaseClient.from('messages').insert([{ user_name: userName, text: text }]);
+            if (error) {
+                alert('Error sending message: ' + error.message);
+                return;
+            }
+
+            document.getElementById('chatInput').value = '';
+        }
+
+        function switchTab(tab) {
+            activeTab = tab;
+            document.getElementById('view-database').classList.toggle('hidden', tab !== 'database');
+            document.getElementById('view-checker').classList.toggle('hidden', tab !== 'checker');
+            
+            document.getElementById('btn-tab-database').className = `flex-1 sm:flex-none px-4 py-2 rounded-lg text-sm font-medium transition ${tab === 'database' ? 'bg-cyan-600 text-white' : 'text-slate-400 hover:text-white'}`;
+            document.getElementById('btn-tab-checker').className = `flex-1 sm:flex-none px-4 py-2 rounded-lg text-sm font-medium transition ${tab === 'checker' ? 'bg-cyan-600 text-white' : 'text-slate-400 hover:text-white'}`;
+        }
+
+        function filterData() {
+            const query = document.getElementById('searchInput').value;
+            renderDiseases(query);
+        }
+
+        function openModal() {
+            document.getElementById('conditionModal').classList.remove('hidden');
+        }
+
+        function closeModal() {
+            document.getElementById('conditionModal').classList.add('hidden');
+        }
+
+        function escapeHtml(str) {
+            return str.replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;");
+        }
+
+        initApp();
+    </script>
+</body>
+</html>
