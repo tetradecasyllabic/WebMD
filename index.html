@@ -180,10 +180,8 @@
 
                 <div class="grid grid-cols-2 gap-3">
                     <div class="relative">
-                        <label class="block text-xs font-medium text-slate-400 mb-1">Categories (Multi-Select)</label>
-                        <div id="categoryContainer" onclick="showDropdown('categoryDropdown')" class="w-full bg-slate-950 border border-slate-800 rounded-xl p-2 min-h-[38px] flex flex-wrap gap-1 items-center cursor-pointer">
-                            <span class="text-xs text-slate-500" id="categoryPlaceholder">Select categories...</span>
-                        </div>
+                        <label class="block text-xs font-medium text-slate-400 mb-1">Category (Comma Separated)</label>
+                        <input type="text" id="formCategory" autocomplete="off" required onfocus="showDropdown('categoryDropdown')" oninput="filterDropdown('formCategory', 'categoryDropdown')" class="w-full bg-slate-950 border border-slate-800 rounded-xl px-3 py-2 text-sm text-white focus:outline-none focus:border-cyan-500" placeholder="e.g. Infectious, Respiratory">
                         <div id="categoryDropdown" class="hidden absolute left-0 right-0 top-full mt-1 bg-slate-950 border border-slate-800 rounded-xl max-h-40 overflow-y-auto z-50 shadow-2xl p-1"></div>
                     </div>
                     <div>
@@ -252,7 +250,6 @@
         let messages = [];
         let activeTab = 'database';
         let selectedSymptoms = new Set();
-        let selectedCategories = new Set();
 
         let optionArrays = {
             category: new Set(['Infectious', 'Respiratory', 'Autoimmune', 'Cardiovascular', 'Neurological', 'Gastrointestinal', 'Dermatological']),
@@ -355,52 +352,11 @@
                 }
             });
 
-            populateCategoryDropdown();
+            populateDropdownList('categoryDropdown', optionArrays.category, 'formCategory', true);
             populateDropdownList('onsetDropdown', optionArrays.onset, 'formOnset', true);
             populateDropdownList('durationDropdown', optionArrays.duration, 'formDuration', true);
             populateDropdownList('symptomsDropdown', optionArrays.symptoms, 'formSymptoms', true);
             populateDropdownList('syndromeDropdown', optionArrays.syndrome, 'formSyndromes', true);
-        }
-
-        function populateCategoryDropdown() {
-            const container = document.getElementById('categoryDropdown');
-            if (!container) return;
-            const items = Array.from(optionArrays.category);
-            container.innerHTML = items.map(item => `
-                <div onclick="toggleCategory('${escapeHtml(item)}')" class="px-3 py-1.5 text-xs text-slate-200 hover:bg-cyan-950 hover:text-cyan-400 rounded-lg cursor-pointer transition flex items-center justify-between">
-                    <span>${item}</span>
-                    <span class="text-cyan-400 text-[10px]">${selectedCategories.has(item) ? '✓ Selected' : ''}</span>
-                </div>
-            `).join('');
-        }
-
-        function toggleCategory(cat) {
-            if (selectedCategories.has(cat)) {
-                selectedCategories.delete(cat);
-            } else {
-                selectedCategories.add(cat);
-            }
-            renderCategoryTags();
-            populateCategoryDropdown();
-        }
-
-        function renderCategoryTags() {
-            const container = document.getElementById('categoryContainer');
-            const placeholder = document.getElementById('categoryPlaceholder');
-            if (selectedCategories.size === 0) {
-                placeholder.classList.remove('hidden');
-                container.querySelectorAll('.cat-tag').forEach(el => el.remove());
-                return;
-            }
-            placeholder.classList.add('hidden');
-            container.querySelectorAll('.cat-tag').forEach(el => el.remove());
-            
-            selectedCategories.forEach(cat => {
-                const tag = document.createElement('span');
-                tag.className = 'cat-tag text-[10px] bg-cyan-950 text-cyan-400 border border-cyan-800/60 px-2 py-0.5 rounded-md flex items-center space-x-1';
-                tag.innerHTML = `<span>${cat}</span> <button type="button" onclick="event.stopPropagation(); toggleCategory('${cat}')" class="hover:text-white ml-1 font-bold">×</button>`;
-                container.insertBefore(tag, placeholder);
-            });
         }
 
         function populateDropdownList(containerId, set, inputId, isCommaAppend) {
@@ -432,7 +388,7 @@
             const el = document.getElementById(dropdownId);
             if (el) {
                 el.classList.remove('hidden');
-                const inputId = dropdownId.replace('Dropdown', '').replace('symptoms', 'formSymptoms').replace('onset', 'formOnset').replace('duration', 'formDuration').replace('syndrome', 'formSyndromes');
+                const inputId = dropdownId.replace('Dropdown', '').replace('symptoms', 'formSymptoms').replace('onset', 'formOnset').replace('duration', 'formDuration').replace('syndrome', 'formSyndromes').replace('category', 'formCategory');
                 filterDropdown(inputId, dropdownId);
             }
         }
@@ -462,13 +418,11 @@
             container.classList.remove('hidden');
         }
 
-        // Smart parser to convert duration text into numeric day bounds
         function parseDurationToDays(str) {
             if (!str) return { min: 1, max: 30 };
             str = str.toLowerCase();
             if (str.includes('chronic') || str.includes('lifelong')) return { min: 60, max: 365 };
 
-            // Match weeks e.g. "1-2 weeks", "3 weeks"
             let weekMatch = str.match(/(\d+)(?:\s*-\s*(\d+))?\s*week/);
             if (weekMatch) {
                 let min = parseInt(weekMatch[1]) * 7;
@@ -476,7 +430,6 @@
                 return { min, max };
             }
 
-            // Match days e.g. "7-10 days", "3 days"
             let dayMatch = str.match(/(\d+)(?:\s*-\s*(\d+))?\s*day/);
             if (dayMatch) {
                 let min = parseInt(dayMatch[1]);
@@ -484,7 +437,6 @@
                 return { min, max };
             }
 
-            // Match months e.g. "1 month"
             let monthMatch = str.match(/(\d+)(?:\s*-\s*(\d+))?\s*month/);
             if (monthMatch) {
                 let min = parseInt(monthMatch[1]) * 30;
@@ -586,7 +538,6 @@
             renderSymptomChecklist();
         }
 
-        // Advanced multi-factor diagnostic algorithm with Proximity Duration Matching
         function runDiagnosticMatch() {
             const container = document.getElementById('checkerResults');
             const userDays = parseInt(document.getElementById('checkerDurationSlider').value);
@@ -607,14 +558,12 @@
                 const matchedCount = diseaseSymptoms.filter(s => selectedSymptoms.has(s)).length;
                 let symptomScore = selectedSymptoms.size > 0 ? (matchedCount / Math.max(diseaseSymptoms.length, 1)) * 65 : 40;
 
-                // Dynamic Range Proximity Duration Score
                 let durationBonus = 0;
                 if (d.duration) {
                     const range = parseDurationToDays(d.duration);
                     if (userDays >= range.min && userDays <= range.max) {
-                        durationBonus = 20; // Perfect match inside range
+                        durationBonus = 20;
                     } else {
-                        // Partial score based on how close user days are to the range bounds
                         const distance = Math.min(Math.abs(userDays - range.min), Math.abs(userDays - range.max));
                         if (distance <= 4) durationBonus = 12;
                         else if (distance <= 10) durationBonus = 5;
@@ -686,15 +635,15 @@
 
         async function saveCondition(e) {
             e.preventDefault();
-            const categoryStr = Array.from(selectedCategories).join(', ');
-            if (!categoryStr) {
-                alert('Please select at least one category.');
+            const categoryValue = document.getElementById('formCategory').value.trim();
+            if (!categoryValue) {
+                alert('Please enter at least one category.');
                 return;
             }
 
             const newDisease = {
                 name: document.getElementById('formName').value,
-                category: categoryStr,
+                category: categoryValue,
                 severity: document.getElementById('formSeverity').value,
                 onset: document.getElementById('formOnset').value,
                 duration: document.getElementById('formDuration').value,
@@ -710,8 +659,6 @@
                 return;
             }
 
-            selectedCategories.clear();
-            renderCategoryTags();
             closeModal();
             document.getElementById('conditionForm').reset();
         }
