@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>sophiaisgay</title>
+    <title>MediCollab</title>
     <!-- Tailwind CSS for styling -->
     <script src="https://cdn.tailwindcss.com"></script>
     <!-- Supabase JavaScript Client SDK -->
@@ -58,7 +58,6 @@
                 <!-- DATABASE VIEW -->
                 <div id="view-database" class="space-y-4">
                     <div id="diseaseList" class="grid grid-cols-1 md:grid-cols-2 gap-4">
-                        <!-- Dynamic items loaded here -->
                         <div class="text-center py-12 text-slate-500 col-span-2">Connecting to Supabase database...</div>
                     </div>
                 </div>
@@ -132,18 +131,10 @@
                 </div>
 
                 <div class="grid grid-cols-2 gap-3">
-                    <div>
-                        <label class="block text-xs font-medium text-slate-400 mb-1">Category (Select or type new)</label>
-                        <input type="text" id="formCategory" list="categoryOptions" required class="w-full bg-slate-950 border border-slate-800 rounded-xl px-3 py-2 text-sm text-white focus:outline-none focus:border-cyan-500" placeholder="e.g. Infectious">
-                        <datalist id="categoryOptions">
-                            <option value="Infectious">
-                            <option value="Respiratory">
-                            <option value="Autoimmune">
-                            <option value="Cardiovascular">
-                            <option value="Neurological">
-                            <option value="Gastrointestinal">
-                            <option value="Dermatological">
-                        </datalist>
+                    <div class="relative">
+                        <label class="block text-xs font-medium text-slate-400 mb-1">Category</label>
+                        <input type="text" id="formCategory" autocomplete="off" required onfocus="showDropdown('categoryDropdown')" oninput="filterDropdown('formCategory', 'categoryDropdown')" class="w-full bg-slate-950 border border-slate-800 rounded-xl px-3 py-2 text-sm text-white focus:outline-none focus:border-cyan-500" placeholder="Select or type category">
+                        <div id="categoryDropdown" class="hidden absolute left-0 right-0 top-full mt-1 bg-slate-950 border border-slate-800 rounded-xl max-h-40 overflow-y-auto z-50 shadow-2xl p-1"></div>
                     </div>
                     <div>
                         <label class="block text-xs font-medium text-slate-400 mb-1">Severity</label>
@@ -157,47 +148,28 @@
                 </div>
 
                 <div class="grid grid-cols-2 gap-3">
-                    <div>
-                        <label class="block text-xs font-medium text-slate-400 mb-1">Onset Type (Select or type new)</label>
-                        <input type="text" id="formOnset" list="onsetOptions" required class="w-full bg-slate-950 border border-slate-800 rounded-xl px-3 py-2 text-sm text-white focus:outline-none focus:border-cyan-500" placeholder="e.g. Sudden (acute)">
-                        <datalist id="onsetOptions">
-                            <option value="Sudden (acute)">
-                            <option value="Gradual">
-                            <option value="Subacute">
-                            <option value="Insidious">
-                            <option value="Recurrent">
-                        </datalist>
+                    <div class="relative">
+                        <label class="block text-xs font-medium text-slate-400 mb-1">Onset Type</label>
+                        <input type="text" id="formOnset" autocomplete="off" required onfocus="showDropdown('onsetDropdown')" oninput="filterDropdown('formOnset', 'onsetDropdown')" class="w-full bg-slate-950 border border-slate-800 rounded-xl px-3 py-2 text-sm text-white focus:outline-none focus:border-cyan-500" placeholder="Select or type onset">
+                        <div id="onsetDropdown" class="hidden absolute left-0 right-0 top-full mt-1 bg-slate-950 border border-slate-800 rounded-xl max-h-40 overflow-y-auto z-50 shadow-2xl p-1"></div>
                     </div>
-                    <div>
-                        <label class="block text-xs font-medium text-slate-400 mb-1">Duration (Select or type new)</label>
-                        <input type="text" id="formDuration" list="durationOptions" required class="w-full bg-slate-950 border border-slate-800 rounded-xl px-3 py-2 text-sm text-white focus:outline-none focus:border-cyan-500" placeholder="e.g. 7-10 days">
-                        <datalist id="durationOptions">
-                            <option value="1-3 days">
-                            <option value="3-7 days">
-                            <option value="7-10 days">
-                            <option value="2-4 weeks">
-                            <option value="Chronic (>3 months)">
-                            <option value="Lifelong">
-                        </datalist>
+                    <div class="relative">
+                        <label class="block text-xs font-medium text-slate-400 mb-1">Duration</label>
+                        <input type="text" id="formDuration" autocomplete="off" required onfocus="showDropdown('durationDropdown')" oninput="filterDropdown('formDuration', 'durationDropdown')" class="w-full bg-slate-950 border border-slate-800 rounded-xl px-3 py-2 text-sm text-white focus:outline-none focus:border-cyan-500" placeholder="Select or type duration">
+                        <div id="durationDropdown" class="hidden absolute left-0 right-0 top-full mt-1 bg-slate-950 border border-slate-800 rounded-xl max-h-40 overflow-y-auto z-50 shadow-2xl p-1"></div>
                     </div>
                 </div>
 
-                <div>
+                <div class="relative">
                     <label class="block text-xs font-medium text-slate-400 mb-1">Symptoms (Comma Separated)</label>
-                    <input type="text" id="formSymptoms" required class="w-full bg-slate-950 border border-slate-800 rounded-xl px-3 py-2 text-sm text-white focus:outline-none focus:border-cyan-500" placeholder="e.g. fever, sore throat, swollen tonsils">
+                    <input type="text" id="formSymptoms" autocomplete="off" required onfocus="showDropdown('symptomsDropdown')" oninput="filterDropdown('formSymptoms', 'symptomsDropdown')" class="w-full bg-slate-950 border border-slate-800 rounded-xl px-3 py-2 text-sm text-white focus:outline-none focus:border-cyan-500" placeholder="e.g. fever, sore throat, swollen tonsils">
+                    <div id="symptomsDropdown" class="hidden absolute left-0 right-0 top-full mt-1 bg-slate-950 border border-slate-800 rounded-xl max-h-40 overflow-y-auto z-50 shadow-2xl p-1"></div>
                 </div>
 
-                <div>
+                <div class="relative">
                     <label class="block text-xs font-medium text-slate-400 mb-1">Known Syndromes / Pre-existing Conditions</label>
-                    <input type="text" id="formSyndromes" list="syndromeOptions" class="w-full bg-slate-950 border border-slate-800 rounded-xl px-3 py-2 text-sm text-white focus:outline-none focus:border-cyan-500" placeholder="e.g. Immunocompromised, Asthma, None">
-                    <datalist id="syndromeOptions">
-                        <option value="None">
-                        <option value="Immunocompromised">
-                        <option value="Asthma / COPD">
-                        <option value="Hypertension">
-                        <option value="Type 2 Diabetes">
-                        <option value="Allergic Rhinitis">
-                    </datalist>
+                    <input type="text" id="formSyndromes" autocomplete="off" onfocus="showDropdown('syndromeDropdown')" oninput="filterDropdown('formSyndromes', 'syndromeDropdown')" class="w-full bg-slate-950 border border-slate-800 rounded-xl px-3 py-2 text-sm text-white focus:outline-none focus:border-cyan-500" placeholder="e.g. Immunocompromised, Asthma, None">
+                    <div id="syndromeDropdown" class="hidden absolute left-0 right-0 top-full mt-1 bg-slate-950 border border-slate-800 rounded-xl max-h-40 overflow-y-auto z-50 shadow-2xl p-1"></div>
                 </div>
 
                 <div>
@@ -231,12 +203,28 @@
         let activeTab = 'database';
         let selectedSymptoms = new Set();
 
+        // Stored arrays of options for dropdowns
+        let optionArrays = {
+            category: new Set(['Infectious', 'Respiratory', 'Autoimmune', 'Cardiovascular', 'Neurological', 'Gastrointestinal', 'Dermatological']),
+            onset: new Set(['Sudden (acute)', 'Gradual', 'Subacute', 'Insidious', 'Recurrent']),
+            duration: new Set(['1-3 days', '3-7 days', '7-10 days', '2-4 weeks', 'Chronic (>3 months)', 'Lifelong']),
+            symptoms: new Set(['fever', 'cough', 'fatigue', 'headache', 'sore throat', 'nausea', 'shortness of breath']),
+            syndrome: new Set(['None', 'Immunocompromised', 'Asthma / COPD', 'Hypertension', 'Type 2 Diabetes', 'Allergic Rhinitis'])
+        };
+
         lucide.createIcons();
 
         async function initApp() {
             await fetchDiseases();
             await fetchMessages();
             setupRealtimeSubscriptions();
+            
+            // Close dropdowns on outside click
+            document.addEventListener('click', (e) => {
+                if (!e.target.closest('.relative')) {
+                    hideAllDropdowns();
+                }
+            });
         }
 
         async function fetchDiseases() {
@@ -246,9 +234,9 @@
                 return;
             }
             diseases = data || [];
+            updateOptionArrays();
             renderDiseases();
             renderSymptomChecklist();
-            updateDatalists();
         }
 
         async function fetchMessages() {
@@ -273,31 +261,88 @@
                 .subscribe();
         }
 
-        // Automatically populate datalists with existing custom entries from the database
-        function updateDatalists() {
-            const categories = new Set();
-            const onsets = new Set();
-            const durations = new Set();
-            const syndromes = new Set();
-
+        // Parse database entries and extract all comma-separated values into selectable arrays
+        function updateOptionArrays() {
             diseases.forEach(d => {
-                if (d.category) categories.add(d.category);
-                if (d.onset) onsets.add(d.onset);
-                if (d.duration) durations.add(d.duration);
-                if (d.related_syndromes) syndromes.add(d.related_syndromes);
+                if (d.category) optionArrays.category.add(d.category.trim());
+                if (d.onset) optionArrays.onset.add(d.onset.trim());
+                if (d.duration) optionArrays.duration.add(d.duration.trim());
+                
+                if (d.symptoms && Array.isArray(d.symptoms)) {
+                    d.symptoms.forEach(s => {
+                        s.split(',').forEach(item => {
+                            if (item.trim()) optionArrays.symptoms.add(item.trim().toLowerCase());
+                        });
+                    });
+                }
+                
+                if (d.related_syndromes) {
+                    d.related_syndromes.split(',').forEach(item => {
+                        if (item.trim()) optionArrays.syndrome.add(item.trim());
+                    });
+                }
             });
 
-            appendOptions('categoryOptions', categories, ['Infectious', 'Respiratory', 'Autoimmune', 'Cardiovascular', 'Neurological', 'Gastrointestinal', 'Dermatological']);
-            appendOptions('onsetOptions', onsets, ['Sudden (acute)', 'Gradual', 'Subacute', 'Insidious', 'Recurrent']);
-            appendOptions('durationOptions', durations, ['1-3 days', '3-7 days', '7-10 days', '2-4 weeks', 'Chronic (>3 months)', 'Lifelong']);
-            appendOptions('syndromeOptions', syndromes, ['None', 'Immunocompromised', 'Asthma / COPD', 'Hypertension', 'Type 2 Diabetes', 'Allergic Rhinitis']);
+            populateDropdownList('categoryDropdown', optionArrays.category, 'formCategory');
+            populateDropdownList('onsetDropdown', optionArrays.onset, 'formOnset');
+            populateDropdownList('durationDropdown', optionArrays.duration, 'formDuration');
+            populateDropdownList('symptomsDropdown', optionArrays.symptoms, 'formSymptoms', true);
+            populateDropdownList('syndromeDropdown', optionArrays.syndrome, 'formSyndromes', true);
         }
 
-        function appendOptions(listId, dynamicSet, defaults) {
-            const listEl = document.getElementById(listId);
-            if (!listEl) return;
-            defaults.forEach(val => dynamicSet.add(val));
-            listEl.innerHTML = Array.from(dynamicSet).map(val => `<option value="${val}">`).join('');
+        function populateDropdownList(containerId, set, inputId, isCommaAppend = false) {
+            const container = document.getElementById(containerId);
+            if (!container) return;
+            const items = Array.from(set);
+            container.innerHTML = items.map(item => `
+                <div onclick="selectOption('${inputId}', '${escapeHtml(item)}', '${containerId}', ${isCommaAppend})" class="px-3 py-1.5 text-xs text-slate-200 hover:bg-cyan-950 hover:text-cyan-400 rounded-lg cursor-pointer transition">
+                    ${item}
+                </div>
+            `).join('');
+        }
+
+        function selectOption(inputId, value, dropdownId, isCommaAppend) {
+            const input = document.getElementById(inputId);
+            if (isCommaAppend) {
+                const parts = input.value.split(',').map(p => p.trim()).filter(p => p.length > 0);
+                if (parts.length > 0 && input.value.trim().endsWith(',')) {
+                    parts.push(value);
+                } else if (parts.length > 0) {
+                    parts[parts.length - 1] = value;
+                } else {
+                    parts.push(value);
+                }
+                input.value = parts.join(', ') + ', ';
+            } else {
+                input.value = value;
+            }
+            hideAllDropdowns();
+        }
+
+        function showDropdown(dropdownId) {
+            hideAllDropdowns();
+            const el = document.getElementById(dropdownId);
+            if (el) el.classList.remove('hidden');
+        }
+
+        function hideAllDropdowns() {
+            document.querySelectorAll('[id$="Dropdown"]').forEach(el => el.classList.add('hidden'));
+        }
+
+        function filterDropdown(inputId, dropdownId) {
+            const input = document.getElementById(inputId);
+            const container = document.getElementById(dropdownId);
+            const filter = input.value.toLowerCase();
+            const items = container.querySelectorAll('div');
+            
+            items.forEach(item => {
+                const text = item.textContent.toLowerCase();
+                if (text.includes(filter)) {
+                    item.classList.remove('hidden');
+                } else {
+                    item.classList.add('hidden');
+                }
+            });
         }
 
         function renderDiseases(filterText = '') {
@@ -456,14 +501,17 @@
 
         async function saveCondition(e) {
             e.preventDefault();
+            const rawSymptoms = document.getElementById('formSymptoms').value;
+            const rawSyndromes = document.getElementById('formSyndromes').value;
+
             const newDisease = {
                 name: document.getElementById('formName').value,
                 category: document.getElementById('formCategory').value,
                 severity: document.getElementById('formSeverity').value,
                 onset: document.getElementById('formOnset').value,
                 duration: document.getElementById('formDuration').value,
-                symptoms: document.getElementById('formSymptoms').value.split(',').map(s => s.trim()),
-                related_syndromes: document.getElementById('formSyndromes').value,
+                symptoms: rawSymptoms.split(',').map(s => s.trim()).filter(s => s.length > 0),
+                related_syndromes: rawSyndromes,
                 description: document.getElementById('formDescription').value,
                 treatment: document.getElementById('formTreatment').value
             };
@@ -517,6 +565,7 @@
         }
 
         function closeModal() {
+            hideAllDropdowns();
             document.getElementById('conditionModal').classList.add('hidden');
         }
 
