@@ -21,7 +21,7 @@
             </div>
             <div>
                 <h1 class="text-xl font-bold tracking-tight text-white">Medi<span class="text-cyan-400">Collab</span></h1>
-                <p class="text-xs text-slate-400">Real-Time Sophia Gay</p>
+                <p class="text-xs text-slate-400">Real-Time Clinical Knowledge Engine</p>
             </div>
         </div>
         
@@ -133,8 +133,17 @@
 
                 <div class="grid grid-cols-2 gap-3">
                     <div>
-                        <label class="block text-xs font-medium text-slate-400 mb-1">Category</label>
-                        <input type="text" id="formCategory" required class="w-full bg-slate-950 border border-slate-800 rounded-xl px-3 py-2 text-sm text-white focus:outline-none focus:border-cyan-500" placeholder="e.g. Infectious">
+                        <label class="block text-xs font-medium text-slate-400 mb-1">Category (Select or type new)</label>
+                        <input type="text" id="formCategory" list="categoryOptions" required class="w-full bg-slate-950 border border-slate-800 rounded-xl px-3 py-2 text-sm text-white focus:outline-none focus:border-cyan-500" placeholder="e.g. Infectious">
+                        <datalist id="categoryOptions">
+                            <option value="Infectious">
+                            <option value="Respiratory">
+                            <option value="Autoimmune">
+                            <option value="Cardiovascular">
+                            <option value="Neurological">
+                            <option value="Gastrointestinal">
+                            <option value="Dermatological">
+                        </datalist>
                     </div>
                     <div>
                         <label class="block text-xs font-medium text-slate-400 mb-1">Severity</label>
@@ -149,12 +158,27 @@
 
                 <div class="grid grid-cols-2 gap-3">
                     <div>
-                        <label class="block text-xs font-medium text-slate-400 mb-1">Onset Type</label>
-                        <input type="text" id="formOnset" required class="w-full bg-slate-950 border border-slate-800 rounded-xl px-3 py-2 text-sm text-white focus:outline-none focus:border-cyan-500" placeholder="e.g. Sudden (acute)">
+                        <label class="block text-xs font-medium text-slate-400 mb-1">Onset Type (Select or type new)</label>
+                        <input type="text" id="formOnset" list="onsetOptions" required class="w-full bg-slate-950 border border-slate-800 rounded-xl px-3 py-2 text-sm text-white focus:outline-none focus:border-cyan-500" placeholder="e.g. Sudden (acute)">
+                        <datalist id="onsetOptions">
+                            <option value="Sudden (acute)">
+                            <option value="Gradual">
+                            <option value="Subacute">
+                            <option value="Insidious">
+                            <option value="Recurrent">
+                        </datalist>
                     </div>
                     <div>
-                        <label class="block text-xs font-medium text-slate-400 mb-1">Duration</label>
-                        <input type="text" id="formDuration" required class="w-full bg-slate-950 border border-slate-800 rounded-xl px-3 py-2 text-sm text-white focus:outline-none focus:border-cyan-500" placeholder="e.g. 7-10 days">
+                        <label class="block text-xs font-medium text-slate-400 mb-1">Duration (Select or type new)</label>
+                        <input type="text" id="formDuration" list="durationOptions" required class="w-full bg-slate-950 border border-slate-800 rounded-xl px-3 py-2 text-sm text-white focus:outline-none focus:border-cyan-500" placeholder="e.g. 7-10 days">
+                        <datalist id="durationOptions">
+                            <option value="1-3 days">
+                            <option value="3-7 days">
+                            <option value="7-10 days">
+                            <option value="2-4 weeks">
+                            <option value="Chronic (>3 months)">
+                            <option value="Lifelong">
+                        </datalist>
                     </div>
                 </div>
 
@@ -165,7 +189,15 @@
 
                 <div>
                     <label class="block text-xs font-medium text-slate-400 mb-1">Known Syndromes / Pre-existing Conditions</label>
-                    <input type="text" id="formSyndromes" class="w-full bg-slate-950 border border-slate-800 rounded-xl px-3 py-2 text-sm text-white focus:outline-none focus:border-cyan-500" placeholder="e.g. Immunocompromised, Asthma, None">
+                    <input type="text" id="formSyndromes" list="syndromeOptions" class="w-full bg-slate-950 border border-slate-800 rounded-xl px-3 py-2 text-sm text-white focus:outline-none focus:border-cyan-500" placeholder="e.g. Immunocompromised, Asthma, None">
+                    <datalist id="syndromeOptions">
+                        <option value="None">
+                        <option value="Immunocompromised">
+                        <option value="Asthma / COPD">
+                        <option value="Hypertension">
+                        <option value="Type 2 Diabetes">
+                        <option value="Allergic Rhinitis">
+                    </datalist>
                 </div>
 
                 <div>
@@ -188,7 +220,7 @@
 
     <!-- Script Application Logic -->
     <script>
-        // ⚡ REPLACE THESE WITH YOUR SUPABASE PROJECT KEYS ⚡
+        // ⚡ SUPABASE PROJECT CONFIG ⚡
         const SUPABASE_URL = "https://umtmdzlqsvhprtpzusea.supabase.co";
         const SUPABASE_ANON_KEY = "sb_publishable_dF98kMpbCWT3sk_dLEF3oA_0T_RifwP";
 
@@ -216,6 +248,7 @@
             diseases = data || [];
             renderDiseases();
             renderSymptomChecklist();
+            updateDatalists();
         }
 
         async function fetchMessages() {
@@ -238,6 +271,33 @@
                     fetchMessages();
                 })
                 .subscribe();
+        }
+
+        // Automatically populate datalists with existing custom entries from the database
+        function updateDatalists() {
+            const categories = new Set();
+            const onsets = new Set();
+            const durations = new Set();
+            const syndromes = new Set();
+
+            diseases.forEach(d => {
+                if (d.category) categories.add(d.category);
+                if (d.onset) onsets.add(d.onset);
+                if (d.duration) durations.add(d.duration);
+                if (d.related_syndromes) syndromes.add(d.related_syndromes);
+            });
+
+            appendOptions('categoryOptions', categories, ['Infectious', 'Respiratory', 'Autoimmune', 'Cardiovascular', 'Neurological', 'Gastrointestinal', 'Dermatological']);
+            appendOptions('onsetOptions', onsets, ['Sudden (acute)', 'Gradual', 'Subacute', 'Insidious', 'Recurrent']);
+            appendOptions('durationOptions', durations, ['1-3 days', '3-7 days', '7-10 days', '2-4 weeks', 'Chronic (>3 months)', 'Lifelong']);
+            appendOptions('syndromeOptions', syndromes, ['None', 'Immunocompromised', 'Asthma / COPD', 'Hypertension', 'Type 2 Diabetes', 'Allergic Rhinitis']);
+        }
+
+        function appendOptions(listId, dynamicSet, defaults) {
+            const listEl = document.getElementById(listId);
+            if (!listEl) return;
+            defaults.forEach(val => dynamicSet.add(val));
+            listEl.innerHTML = Array.from(dynamicSet).map(val => `<option value="${val}">`).join('');
         }
 
         function renderDiseases(filterText = '') {
