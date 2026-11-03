@@ -63,7 +63,50 @@
                 </div>
 
                 <!-- SYMPTOM CHECKER VIEW -->
-                <div id="view-checker" class="hidden space-y-4">
+                <div id="view-checker" class="hidden space-y-6">
+                    <!-- Advanced Patient Context Filters -->
+                    <div class="bg-slate-950 p-4 rounded-xl border border-slate-800 space-y-3">
+                        <h3 class="text-sm font-semibold text-slate-300 flex items-center space-x-2">
+                            <i data-lucide="sliders" class="w-4 h-4 text-cyan-400"></i>
+                            <span>Patient Presentation & Context:</span>
+                        </h3>
+                        <div class="grid grid-cols-1 sm:grid-cols-3 gap-3">
+                            <div>
+                                <label class="block text-[11px] text-slate-400 mb-1">Symptom Duration</label>
+                                <select id="checkerDuration" onchange="runDiagnosticMatch()" class="w-full bg-slate-900 border border-slate-800 rounded-xl px-3 py-2 text-xs text-white focus:outline-none focus:border-cyan-500">
+                                    <option value="">Any / Not Sure</option>
+                                    <option value="1-3 days">1-3 days</option>
+                                    <option value="3-7 days">3-7 days</option>
+                                    <option value="7-10 days">7-10 days</option>
+                                    <option value="2-4 weeks">2-4 weeks</option>
+                                    <option value="Chronic (>3 months)">Chronic (>3 months)</option>
+                                </select>
+                            </div>
+                            <div>
+                                <label class="block text-[11px] text-slate-400 mb-1">Onset Type</label>
+                                <select id="checkerOnset" onchange="runDiagnosticMatch()" class="w-full bg-slate-900 border border-slate-800 rounded-xl px-3 py-2 text-xs text-white focus:outline-none focus:border-cyan-500">
+                                    <option value="">Any / Not Sure</option>
+                                    <option value="Sudden (acute)">Sudden (acute)</option>
+                                    <option value="Gradual">Gradual</option>
+                                    <option value="Subacute">Subacute</option>
+                                    <option value="Insidious">Insidious</option>
+                                    <option value="Recurrent">Recurrent</option>
+                                </select>
+                            </div>
+                            <div>
+                                <label class="block text-[11px] text-slate-400 mb-1">Pre-existing Syndrome</label>
+                                <select id="checkerSyndrome" onchange="runDiagnosticMatch()" class="w-full bg-slate-900 border border-slate-800 rounded-xl px-3 py-2 text-xs text-white focus:outline-none focus:border-cyan-500">
+                                    <option value="">None / Unspecified</option>
+                                    <option value="Immunocompromised">Immunocompromised</option>
+                                    <option value="Asthma / COPD">Asthma / COPD</option>
+                                    <option value="Hypertension">Hypertension</option>
+                                    <option value="Type 2 Diabetes">Type 2 Diabetes</option>
+                                    <option value="Allergic Rhinitis">Allergic Rhinitis</option>
+                                </select>
+                            </div>
+                        </div>
+                    </div>
+
                     <div class="bg-slate-950 p-4 rounded-xl border border-slate-800">
                         <h3 class="text-sm font-semibold text-slate-300 mb-3 flex items-center space-x-2">
                             <i data-lucide="check-square" class="w-4 h-4 text-cyan-400"></i>
@@ -77,7 +120,7 @@
                     <div id="checkerResults" class="space-y-3">
                         <h4 class="text-xs font-semibold uppercase tracking-wider text-slate-400 mt-6">Differential Analysis</h4>
                         <div class="bg-slate-950/50 border border-slate-800/60 p-6 rounded-xl text-center text-slate-500 text-sm">
-                            Check symptoms above to run instant differential matching.
+                            Select symptoms above to run instant differential matching.
                         </div>
                     </div>
                 </div>
@@ -132,8 +175,10 @@
 
                 <div class="grid grid-cols-2 gap-3">
                     <div class="relative">
-                        <label class="block text-xs font-medium text-slate-400 mb-1">Category</label>
-                        <input type="text" id="formCategory" autocomplete="off" required onfocus="showDropdown('categoryDropdown')" oninput="filterDropdown('formCategory', 'categoryDropdown')" class="w-full bg-slate-950 border border-slate-800 rounded-xl px-3 py-2 text-sm text-white focus:outline-none focus:border-cyan-500" placeholder="Select or type category">
+                        <label class="block text-xs font-medium text-slate-400 mb-1">Categories (Multi-Select)</label>
+                        <div id="categoryContainer" onclick="showDropdown('categoryDropdown')" class="w-full bg-slate-950 border border-slate-800 rounded-xl p-2 min-h-[38px] flex flex-wrap gap-1 items-center cursor-pointer">
+                            <span class="text-xs text-slate-500" id="categoryPlaceholder">Select categories...</span>
+                        </div>
                         <div id="categoryDropdown" class="hidden absolute left-0 right-0 top-full mt-1 bg-slate-950 border border-slate-800 rounded-xl max-h-40 overflow-y-auto z-50 shadow-2xl p-1"></div>
                     </div>
                     <div>
@@ -202,8 +247,8 @@
         let messages = [];
         let activeTab = 'database';
         let selectedSymptoms = new Set();
+        let selectedCategories = new Set();
 
-        // Stored arrays of options for dropdowns
         let optionArrays = {
             category: new Set(['Infectious', 'Respiratory', 'Autoimmune', 'Cardiovascular', 'Neurological', 'Gastrointestinal', 'Dermatological']),
             onset: new Set(['Sudden (acute)', 'Gradual', 'Subacute', 'Insidious', 'Recurrent']),
@@ -219,7 +264,6 @@
             await fetchMessages();
             setupRealtimeSubscriptions();
             
-            // Close dropdowns on outside click
             document.addEventListener('click', (e) => {
                 if (!e.target.closest('.relative')) {
                     hideAllDropdowns();
@@ -261,36 +305,77 @@
                 .subscribe();
         }
 
-        // Parse database entries and extract all comma-separated values into selectable arrays
+        // Universal comma tokenizing and option aggregation
         function updateOptionArrays() {
             diseases.forEach(d => {
-                if (d.category) optionArrays.category.add(d.category.trim());
-                if (d.onset) optionArrays.onset.add(d.onset.trim());
-                if (d.duration) optionArrays.duration.add(d.duration.trim());
-                
+                if (d.category) {
+                    d.category.split(',').forEach(c => { if (c.trim()) optionArrays.category.add(c.trim()); });
+                }
+                if (d.onset) {
+                    d.onset.split(',').forEach(o => { if (o.trim()) optionArrays.onset.add(o.trim()); });
+                }
+                if (d.duration) {
+                    d.duration.split(',').forEach(dur => { if (dur.trim()) optionArrays.duration.add(dur.trim()); });
+                }
                 if (d.symptoms && Array.isArray(d.symptoms)) {
                     d.symptoms.forEach(s => {
-                        s.split(',').forEach(item => {
-                            if (item.trim()) optionArrays.symptoms.add(item.trim().toLowerCase());
-                        });
+                        s.split(',').forEach(item => { if (item.trim()) optionArrays.symptoms.add(item.trim().toLowerCase()); });
                     });
                 }
-                
                 if (d.related_syndromes) {
-                    d.related_syndromes.split(',').forEach(item => {
-                        if (item.trim()) optionArrays.syndrome.add(item.trim());
-                    });
+                    d.related_syndromes.split(',').forEach(item => { if (item.trim()) optionArrays.syndrome.add(item.trim()); });
                 }
             });
 
-            populateDropdownList('categoryDropdown', optionArrays.category, 'formCategory');
-            populateDropdownList('onsetDropdown', optionArrays.onset, 'formOnset');
-            populateDropdownList('durationDropdown', optionArrays.duration, 'formDuration');
+            populateCategoryDropdown();
+            populateDropdownList('onsetDropdown', optionArrays.onset, 'formOnset', true);
+            populateDropdownList('durationDropdown', optionArrays.duration, 'formDuration', true);
             populateDropdownList('symptomsDropdown', optionArrays.symptoms, 'formSymptoms', true);
             populateDropdownList('syndromeDropdown', optionArrays.syndrome, 'formSyndromes', true);
         }
 
-        function populateDropdownList(containerId, set, inputId, isCommaAppend = false) {
+        function populateCategoryDropdown() {
+            const container = document.getElementById('categoryDropdown');
+            if (!container) return;
+            const items = Array.from(optionArrays.category);
+            container.innerHTML = items.map(item => `
+                <div onclick="toggleCategory('${escapeHtml(item)}')" class="px-3 py-1.5 text-xs text-slate-200 hover:bg-cyan-950 hover:text-cyan-400 rounded-lg cursor-pointer transition flex items-center justify-between">
+                    <span>${item}</span>
+                    <span class="text-cyan-400 text-[10px]">${selectedCategories.has(item) ? '✓ Selected' : ''}</span>
+                </div>
+            `).join('');
+        }
+
+        function toggleCategory(cat) {
+            if (selectedCategories.has(cat)) {
+                selectedCategories.delete(cat);
+            } else {
+                selectedCategories.add(cat);
+            }
+            renderCategoryTags();
+            populateCategoryDropdown();
+        }
+
+        function renderCategoryTags() {
+            const container = document.getElementById('categoryContainer');
+            const placeholder = document.getElementById('categoryPlaceholder');
+            if (selectedCategories.size === 0) {
+                placeholder.classList.remove('hidden');
+                container.querySelectorAll('.cat-tag').forEach(el => el.remove());
+                return;
+            }
+            placeholder.classList.add('hidden');
+            container.querySelectorAll('.cat-tag').forEach(el => el.remove());
+            
+            selectedCategories.forEach(cat => {
+                const tag = document.createElement('span');
+                tag.className = 'cat-tag text-[10px] bg-cyan-950 text-cyan-400 border border-cyan-800/60 px-2 py-0.5 rounded-md flex items-center space-x-1';
+                tag.innerHTML = `<span>${cat}</span> <button type="button" onclick="event.stopPropagation(); toggleCategory('${cat}')" class="hover:text-white ml-1 font-bold">×</button>`;
+                container.insertBefore(tag, placeholder);
+            });
+        }
+
+        function populateDropdownList(containerId, set, inputId, isCommaAppend) {
             const container = document.getElementById(containerId);
             if (!container) return;
             const items = Array.from(set);
@@ -364,7 +449,9 @@
                     <div>
                         <div class="flex items-start justify-between mb-2">
                             <div>
-                                <span class="text-xs font-semibold px-2 py-0.5 rounded-md bg-cyan-950 text-cyan-400 border border-cyan-800/50">${d.category}</span>
+                                <div class="flex flex-wrap gap-1 mb-1">
+                                    ${d.category.split(',').map(c => `<span class="text-xs font-semibold px-2 py-0.5 rounded-md bg-cyan-950 text-cyan-400 border border-cyan-800/50">${c.trim()}</span>`).join('')}
+                                </div>
                                 <h3 class="text-base font-bold text-white mt-1">${d.name}</h3>
                             </div>
                             <span class="text-xs px-2 py-0.5 rounded-full ${getSeverityClass(d.severity)}">${d.severity}</span>
@@ -434,13 +521,18 @@
             renderSymptomChecklist();
         }
 
+        // Advanced multi-factor diagnostic algorithm
         function runDiagnosticMatch() {
             const container = document.getElementById('checkerResults');
-            if (selectedSymptoms.size === 0) {
+            const targetDuration = document.getElementById('checkerDuration').value.toLowerCase();
+            const targetOnset = document.getElementById('checkerOnset').value.toLowerCase();
+            const targetSyndrome = document.getElementById('checkerSyndrome').value.toLowerCase();
+
+            if (selectedSymptoms.size === 0 && !targetDuration && !targetOnset && !targetSyndrome) {
                 container.innerHTML = `
                     <h4 class="text-xs font-semibold uppercase tracking-wider text-slate-400 mt-6 mb-2">Differential Analysis</h4>
                     <div class="bg-slate-950/50 border border-slate-800/60 p-6 rounded-xl text-center text-slate-500 text-sm">
-                        Select symptoms above to run instant differential matching.
+                        Select symptoms or patient context above to run instant differential matching.
                     </div>`;
                 return;
             }
@@ -448,31 +540,53 @@
             const matches = diseases.map(d => {
                 const diseaseSymptoms = d.symptoms.map(s => s.trim().toLowerCase());
                 const matchedCount = diseaseSymptoms.filter(s => selectedSymptoms.has(s)).length;
-                const matchPercentage = Math.round((matchedCount / Math.max(diseaseSymptoms.length, 1)) * 100);
-                return { ...d, matchedCount, matchPercentage };
-            }).filter(d => d.matchedCount > 0).sort((a, b) => b.matchPercentage - a.matchPercentage);
+                let symptomScore = selectedSymptoms.size > 0 ? (matchedCount / Math.max(diseaseSymptoms.length, 1)) * 70 : 50;
+
+                // Duration factor
+                let durationBonus = 0;
+                if (targetDuration && d.duration && d.duration.toLowerCase().includes(targetDuration)) {
+                    durationBonus = 15;
+                }
+
+                // Onset factor
+                let onsetBonus = 0;
+                if (targetOnset && d.onset && d.onset.toLowerCase().includes(targetOnset)) {
+                    onsetBonus = 10;
+                }
+
+                // Syndrome factor
+                let syndromeBonus = 0;
+                if (targetSyndrome && d.related_syndromes && d.related_syndromes.toLowerCase().includes(targetSyndrome)) {
+                    syndromeBonus = 15;
+                }
+
+                const totalScore = Math.min(Math.round(symptomScore + durationBonus + onsetBonus + syndromeBonus), 100);
+                return { ...d, matchedCount, matchPercentage: totalScore, durationBonus, onsetBonus, syndromeBonus };
+            }).filter(d => selectedSymptoms.size === 0 || d.matchedCount > 0).sort((a, b) => b.matchPercentage - a.matchPercentage);
 
             if (matches.length === 0) {
                 container.innerHTML = `
                     <h4 class="text-xs font-semibold uppercase tracking-wider text-slate-400 mt-6 mb-2">Differential Analysis</h4>
                     <div class="bg-slate-950/50 border border-slate-800/60 p-6 rounded-xl text-center text-slate-500 text-sm">
-                        No conditions match the selected symptom combination.
+                        No conditions match the selected symptom combination and context filters.
                     </div>`;
                 return;
             }
 
             container.innerHTML = `
-                <h4 class="text-xs font-semibold uppercase tracking-wider text-slate-400 mt-6 mb-2">Differential Analysis (${matches.length} Matches Found)</h4>
+                <h4 class="text-xs font-semibold uppercase tracking-wider text-slate-400 mt-6 mb-2">Advanced Differential Analysis (${matches.length} Matches Found)</h4>
                 <div class="space-y-3">
                     ${matches.map(m => `
                         <div class="bg-slate-950 border border-slate-800 rounded-xl p-4 flex items-center justify-between">
                             <div>
-                                <span class="text-xs text-cyan-400 font-medium">${m.category}</span>
+                                <div class="flex gap-1 mb-1">
+                                    ${m.category.split(',').map(c => `<span class="text-[10px] text-cyan-400 font-medium bg-cyan-950/50 px-1.5 py-0.5 rounded">${c.trim()}</span>`).join('')}
+                                </div>
                                 <h5 class="text-sm font-bold text-white">${m.name}</h5>
-                                <p class="text-[11px] text-slate-400 mt-0.5">Matched ${m.matchedCount} of ${m.symptoms.length} symptoms • Onset: ${m.onset || 'N/A'}</p>
+                                <p class="text-[11px] text-slate-400 mt-0.5">Matched ${m.matchedCount} of ${m.symptoms.length} symptoms • Onset: ${m.onset || 'N/A'} • Duration: ${m.duration || 'N/A'}</p>
                             </div>
                             <div class="text-right">
-                                <span class="text-sm font-bold px-2.5 py-1 rounded-lg bg-cyan-950 text-cyan-400 border border-cyan-800/50">${m.matchPercentage}% Match</span>
+                                <span class="text-sm font-bold px-2.5 py-1 rounded-lg bg-cyan-950 text-cyan-400 border border-cyan-800/50">${m.matchPercentage}% Score</span>
                             </div>
                         </div>
                     `).join('')}
@@ -501,17 +615,20 @@
 
         async function saveCondition(e) {
             e.preventDefault();
-            const rawSymptoms = document.getElementById('formSymptoms').value;
-            const rawSyndromes = document.getElementById('formSyndromes').value;
+            const categoryStr = Array.from(selectedCategories).join(', ');
+            if (!categoryStr) {
+                alert('Please select at least one category.');
+                return;
+            }
 
             const newDisease = {
                 name: document.getElementById('formName').value,
-                category: document.getElementById('formCategory').value,
+                category: categoryStr,
                 severity: document.getElementById('formSeverity').value,
                 onset: document.getElementById('formOnset').value,
                 duration: document.getElementById('formDuration').value,
-                symptoms: rawSymptoms.split(',').map(s => s.trim()).filter(s => s.length > 0),
-                related_syndromes: rawSyndromes,
+                symptoms: document.getElementById('formSymptoms').value.split(',').map(s => s.trim()).filter(s => s.length > 0),
+                related_syndromes: document.getElementById('formSyndromes').value,
                 description: document.getElementById('formDescription').value,
                 treatment: document.getElementById('formTreatment').value
             };
@@ -522,6 +639,8 @@
                 return;
             }
 
+            selectedCategories.clear();
+            renderCategoryTags();
             closeModal();
             document.getElementById('conditionForm').reset();
         }
