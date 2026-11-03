@@ -65,23 +65,28 @@
                 <!-- SYMPTOM CHECKER VIEW -->
                 <div id="view-checker" class="hidden space-y-6">
                     <!-- Advanced Patient Context Filters -->
-                    <div class="bg-slate-950 p-4 rounded-xl border border-slate-800 space-y-3">
+                    <div class="bg-slate-950 p-4 rounded-xl border border-slate-800 space-y-4">
                         <h3 class="text-sm font-semibold text-slate-300 flex items-center space-x-2">
                             <i data-lucide="sliders" class="w-4 h-4 text-cyan-400"></i>
                             <span>Patient Presentation & Context:</span>
                         </h3>
-                        <div class="grid grid-cols-1 sm:grid-cols-3 gap-3">
-                            <div>
-                                <label class="block text-[11px] text-slate-400 mb-1">Symptom Duration</label>
-                                <select id="checkerDuration" onchange="runDiagnosticMatch()" class="w-full bg-slate-900 border border-slate-800 rounded-xl px-3 py-2 text-xs text-white focus:outline-none focus:border-cyan-500">
-                                    <option value="">Any / Not Sure</option>
-                                    <option value="1-3 days">1-3 days</option>
-                                    <option value="3-7 days">3-7 days</option>
-                                    <option value="7-10 days">7-10 days</option>
-                                    <option value="2-4 weeks">2-4 weeks</option>
-                                    <option value="Chronic (>3 months)">Chronic (>3 months)</option>
-                                </select>
+                        
+                        <!-- Dynamic Duration Slider -->
+                        <div class="space-y-1.5 bg-slate-900/60 p-3 rounded-xl border border-slate-800/80">
+                            <div class="flex justify-between items-center text-xs">
+                                <span class="text-slate-400 font-medium">Symptom Duration</span>
+                                <span id="durationLabel" class="text-cyan-400 font-bold bg-cyan-950 px-2 py-0.5 rounded border border-cyan-800/50">7 Days (1 Week)</span>
                             </div>
+                            <input type="range" id="checkerDurationSlider" min="1" max="60" value="7" oninput="updateDurationLabel(); runDiagnosticMatch()" class="w-full accent-cyan-500 bg-slate-800 cursor-pointer h-2 rounded-lg">
+                            <div class="flex justify-between text-[10px] text-slate-500 pt-0.5">
+                                <span>1 Day</span>
+                                <span>2 Weeks</span>
+                                <span>1 Month</span>
+                                <span>2 Months+</span>
+                            </div>
+                        </div>
+
+                        <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
                             <div>
                                 <label class="block text-[11px] text-slate-400 mb-1">Onset Type</label>
                                 <select id="checkerOnset" onchange="runDiagnosticMatch()" class="w-full bg-slate-900 border border-slate-800 rounded-xl px-3 py-2 text-xs text-white focus:outline-none focus:border-cyan-500">
@@ -200,7 +205,7 @@
                     </div>
                     <div class="relative">
                         <label class="block text-xs font-medium text-slate-400 mb-1">Duration</label>
-                        <input type="text" id="formDuration" autocomplete="off" required onfocus="showDropdown('durationDropdown')" oninput="filterDropdown('formDuration', 'durationDropdown')" class="w-full bg-slate-950 border border-slate-800 rounded-xl px-3 py-2 text-sm text-white focus:outline-none focus:border-cyan-500" placeholder="Select or type duration">
+                        <input type="text" id="formDuration" autocomplete="off" required onfocus="showDropdown('durationDropdown')" oninput="filterDropdown('formDuration', 'durationDropdown')" class="w-full bg-slate-950 border border-slate-800 rounded-xl px-3 py-2 text-sm text-white focus:outline-none focus:border-cyan-500" placeholder="e.g. 1-2 weeks">
                         <div id="durationDropdown" class="hidden absolute left-0 right-0 top-full mt-1 bg-slate-950 border border-slate-800 rounded-xl max-h-40 overflow-y-auto z-50 shadow-2xl p-1"></div>
                     </div>
                 </div>
@@ -252,7 +257,7 @@
         let optionArrays = {
             category: new Set(['Infectious', 'Respiratory', 'Autoimmune', 'Cardiovascular', 'Neurological', 'Gastrointestinal', 'Dermatological']),
             onset: new Set(['Sudden (acute)', 'Gradual', 'Subacute', 'Insidious', 'Recurrent']),
-            duration: new Set(['1-3 days', '3-7 days', '7-10 days', '2-4 weeks', 'Chronic (>3 months)', 'Lifelong']),
+            duration: new Set(['1-3 days', '3-7 days', '7-10 days', '1-2 weeks', '1-3 weeks', '2-4 weeks', 'Chronic (>3 months)']),
             symptoms: new Set(['fever', 'cough', 'fatigue', 'headache', 'sore throat', 'nausea', 'shortness of breath']),
             syndrome: new Set(['None', 'Immunocompromised', 'Asthma / COPD', 'Hypertension', 'Type 2 Diabetes', 'Allergic Rhinitis'])
         };
@@ -263,6 +268,7 @@
             await fetchDiseases();
             await fetchMessages();
             setupRealtimeSubscriptions();
+            updateDurationLabel();
             
             document.addEventListener('click', (e) => {
                 if (!e.target.closest('.relative')) {
@@ -305,7 +311,29 @@
                 .subscribe();
         }
 
-        // Universal comma tokenizing and option aggregation
+        function updateDurationLabel() {
+            const slider = document.getElementById('checkerDurationSlider');
+            const label = document.getElementById('durationLabel');
+            const days = parseInt(slider.value);
+            
+            if (days === 1) {
+                label.textContent = "1 Day";
+            } else if (days < 7) {
+                label.textContent = `${days} Days`;
+            } else if (days === 7) {
+                label.textContent = "7 Days (1 Week)";
+            } else if (days < 30) {
+                const weeks = (days / 7).toFixed(1);
+                label.textContent = `${days} Days (~${weeks} Weeks)`;
+            } else if (days < 60) {
+                const months = (days / 30).toFixed(1);
+                label.textContent = `${days} Days (~${months} Months)`;
+            } else {
+                label.textContent = "60+ Days (Chronic)";
+            }
+            runDiagnosticMatch();
+        }
+
         function updateOptionArrays() {
             diseases.forEach(d => {
                 if (d.category) {
@@ -389,25 +417,24 @@
         function selectOption(inputId, value, dropdownId, isCommaAppend) {
             const input = document.getElementById(inputId);
             if (isCommaAppend) {
-                const parts = input.value.split(',').map(p => p.trim()).filter(p => p.length > 0);
-                if (parts.length > 0 && input.value.trim().endsWith(',')) {
-                    parts.push(value);
-                } else if (parts.length > 0) {
-                    parts[parts.length - 1] = value;
-                } else {
-                    parts.push(value);
-                }
-                input.value = parts.join(', ') + ', ';
+                const parts = input.value.split(',').map(p => p.trim());
+                parts[parts.length - 1] = value;
+                input.value = parts.filter(p => p.length > 0).join(', ') + ', ';
             } else {
                 input.value = value;
             }
             hideAllDropdowns();
+            input.focus();
         }
 
         function showDropdown(dropdownId) {
             hideAllDropdowns();
             const el = document.getElementById(dropdownId);
-            if (el) el.classList.remove('hidden');
+            if (el) {
+                el.classList.remove('hidden');
+                const inputId = dropdownId.replace('Dropdown', '').replace('symptoms', 'formSymptoms').replace('onset', 'formOnset').replace('duration', 'formDuration').replace('syndrome', 'formSyndromes');
+                filterDropdown(inputId, dropdownId);
+            }
         }
 
         function hideAllDropdowns() {
@@ -417,17 +444,55 @@
         function filterDropdown(inputId, dropdownId) {
             const input = document.getElementById(inputId);
             const container = document.getElementById(dropdownId);
-            const filter = input.value.toLowerCase();
-            const items = container.querySelectorAll('div');
+            if (!input || !container) return;
             
+            const rawValue = input.value;
+            const parts = rawValue.split(',');
+            const currentWord = parts[parts.length - 1].trim().toLowerCase();
+
+            const items = container.querySelectorAll('div');
             items.forEach(item => {
                 const text = item.textContent.toLowerCase();
-                if (text.includes(filter)) {
+                if (text.includes(currentWord)) {
                     item.classList.remove('hidden');
                 } else {
                     item.classList.add('hidden');
                 }
             });
+            container.classList.remove('hidden');
+        }
+
+        // Smart parser to convert duration text into numeric day bounds
+        function parseDurationToDays(str) {
+            if (!str) return { min: 1, max: 30 };
+            str = str.toLowerCase();
+            if (str.includes('chronic') || str.includes('lifelong')) return { min: 60, max: 365 };
+
+            // Match weeks e.g. "1-2 weeks", "3 weeks"
+            let weekMatch = str.match(/(\d+)(?:\s*-\s*(\d+))?\s*week/);
+            if (weekMatch) {
+                let min = parseInt(weekMatch[1]) * 7;
+                let max = weekMatch[2] ? parseInt(weekMatch[2]) * 7 : min;
+                return { min, max };
+            }
+
+            // Match days e.g. "7-10 days", "3 days"
+            let dayMatch = str.match(/(\d+)(?:\s*-\s*(\d+))?\s*day/);
+            if (dayMatch) {
+                let min = parseInt(dayMatch[1]);
+                let max = dayMatch[2] ? parseInt(dayMatch[2]) : min;
+                return { min, max };
+            }
+
+            // Match months e.g. "1 month"
+            let monthMatch = str.match(/(\d+)(?:\s*-\s*(\d+))?\s*month/);
+            if (monthMatch) {
+                let min = parseInt(monthMatch[1]) * 30;
+                let max = weekMatch && weekMatch[2] ? parseInt(weekMatch[2]) * 30 : min;
+                return { min, max };
+            }
+
+            return { min: 1, max: 14 };
         }
 
         function renderDiseases(filterText = '') {
@@ -521,14 +586,14 @@
             renderSymptomChecklist();
         }
 
-        // Advanced multi-factor diagnostic algorithm
+        // Advanced multi-factor diagnostic algorithm with Proximity Duration Matching
         function runDiagnosticMatch() {
             const container = document.getElementById('checkerResults');
-            const targetDuration = document.getElementById('checkerDuration').value.toLowerCase();
+            const userDays = parseInt(document.getElementById('checkerDurationSlider').value);
             const targetOnset = document.getElementById('checkerOnset').value.toLowerCase();
             const targetSyndrome = document.getElementById('checkerSyndrome').value.toLowerCase();
 
-            if (selectedSymptoms.size === 0 && !targetDuration && !targetOnset && !targetSyndrome) {
+            if (selectedSymptoms.size === 0 && !targetOnset && !targetSyndrome) {
                 container.innerHTML = `
                     <h4 class="text-xs font-semibold uppercase tracking-wider text-slate-400 mt-6 mb-2">Differential Analysis</h4>
                     <div class="bg-slate-950/50 border border-slate-800/60 p-6 rounded-xl text-center text-slate-500 text-sm">
@@ -540,28 +605,34 @@
             const matches = diseases.map(d => {
                 const diseaseSymptoms = d.symptoms.map(s => s.trim().toLowerCase());
                 const matchedCount = diseaseSymptoms.filter(s => selectedSymptoms.has(s)).length;
-                let symptomScore = selectedSymptoms.size > 0 ? (matchedCount / Math.max(diseaseSymptoms.length, 1)) * 70 : 50;
+                let symptomScore = selectedSymptoms.size > 0 ? (matchedCount / Math.max(diseaseSymptoms.length, 1)) * 65 : 40;
 
-                // Duration factor
+                // Dynamic Range Proximity Duration Score
                 let durationBonus = 0;
-                if (targetDuration && d.duration && d.duration.toLowerCase().includes(targetDuration)) {
-                    durationBonus = 15;
+                if (d.duration) {
+                    const range = parseDurationToDays(d.duration);
+                    if (userDays >= range.min && userDays <= range.max) {
+                        durationBonus = 20; // Perfect match inside range
+                    } else {
+                        // Partial score based on how close user days are to the range bounds
+                        const distance = Math.min(Math.abs(userDays - range.min), Math.abs(userDays - range.max));
+                        if (distance <= 4) durationBonus = 12;
+                        else if (distance <= 10) durationBonus = 5;
+                    }
                 }
 
-                // Onset factor
                 let onsetBonus = 0;
                 if (targetOnset && d.onset && d.onset.toLowerCase().includes(targetOnset)) {
                     onsetBonus = 10;
                 }
 
-                // Syndrome factor
                 let syndromeBonus = 0;
                 if (targetSyndrome && d.related_syndromes && d.related_syndromes.toLowerCase().includes(targetSyndrome)) {
                     syndromeBonus = 15;
                 }
 
                 const totalScore = Math.min(Math.round(symptomScore + durationBonus + onsetBonus + syndromeBonus), 100);
-                return { ...d, matchedCount, matchPercentage: totalScore, durationBonus, onsetBonus, syndromeBonus };
+                return { ...d, matchedCount, matchPercentage: totalScore };
             }).filter(d => selectedSymptoms.size === 0 || d.matchedCount > 0).sort((a, b) => b.matchPercentage - a.matchPercentage);
 
             if (matches.length === 0) {
